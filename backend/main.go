@@ -34,11 +34,11 @@ func main() {
 
 	//create router for crud with mux
 	router := mux.NewRouter()
-	router.HandleFunc("api/users", getUsers(db)).Methods("GET")
-	router.HandleFunc("api/users", createUser(db)).Methods("POST")
-	router.HandleFunc("api/users/{id}", getUser(db)).Methods("GET")
-	router.HandleFunc("api/users/{id}", updateUser(db)).Methods("PUT")
-	router.HandleFunc("api/users/{id}", deleteUser(db)).Methods("DELETE")
+	router.HandleFunc("/api/users", getUsers(db)).Methods("GET")
+	router.HandleFunc("/api/users", createUser(db)).Methods("POST")
+	router.HandleFunc("/api/users/{id}", getUser(db)).Methods("GET")
+	router.HandleFunc("/api/users/{id}", updateUser(db)).Methods("PUT")
+	router.HandleFunc("/api/users/{id}", deleteUser(db)).Methods("DELETE")
 
 	// wrap the router with CORS and JSON type middleware
 	enhancedRouter := enableCORS(jsonContentTypeMiddleware(router))
