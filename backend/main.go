@@ -94,3 +94,84 @@ func getUsers(db *sql.DB) http.HandlerFunc {
 		json.NewEncoder(w).Encode(users)
 	}
 }
+
+// get user by id
+func getUser(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		id := vars["id"]
+
+		var user User
+		err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&user.ID, &user.Username, &user.Email)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		json.NewEncoder(w).Encode(user)
+	}
+}
+
+// create user
+func createUser(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		var user User
+		if err := json.NewDecoder(req.Body).Decode(&user); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		err := db.QueryRow("INSERT INTO users (username, password, email) VALUES ($1, $2, $3) RETURNING id", user.Username, user.Password, user.Email).Scan(&user.ID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		json.NewEncoder(w).Encode(user)
+	}
+}
+
+// update user
+func updateUser(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		id := vars["id"]
+
+		var updatedUser User
+		if err := json.NewDecoder(req.Body).Decode(&updatedUser); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		_, err := db.Exec("UPDATE users SET username = $1, email = $2 WHERE id = $3", updatedUser.Username, updatedUser.Email, id)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		json.NewEncoder(w).Encode(updatedUser)
+	}
+}
+
+// delete user
+func deleteUser(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		id := vars["id"]
+
+		var user User
+		err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&user.ID, &user.Username, &user.Email)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		} else {
+			_, err := db.Exec("DELETE FROM users WHERE id = $1", id)
+			if err != nil {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			json.NewEncoder(w).Encode(map[string]string{"message": "User deleted successfully"})
+		}
+
+	}
+}
