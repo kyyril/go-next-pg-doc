@@ -103,7 +103,7 @@ func getUser(db *sql.DB) http.HandlerFunc {
 		id := vars["id"]
 
 		var user User
-		err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&user.ID, &user.Username, &user.Email)
+		err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&user.ID, &user.Username, &user.Password, &user.Email)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -161,18 +161,20 @@ func deleteUser(db *sql.DB) http.HandlerFunc {
 		id := vars["id"]
 
 		var user User
-		err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&user.ID, &user.Username, &user.Email)
+		err := db.QueryRow("SELECT id, username, password, email FROM users WHERE id = $1", id).Scan(&user.ID, &user.Username, &user.Password, &user.Email)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": "User not found"})
 			return
-		} else {
-			_, err := db.Exec("DELETE FROM users WHERE id = $1", id)
-			if err != nil {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			json.NewEncoder(w).Encode(map[string]string{"message": "User deleted successfully"})
 		}
+
+		_, err = db.Exec("DELETE FROM users WHERE id = $1", id)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to delete user"})
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]string{"message": "User deleted successfully"})
 
 	}
 }
